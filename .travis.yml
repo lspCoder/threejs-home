@@ -23,8 +23,8 @@ before_script:
 script:
   - npm run build
 after_success:
-  - cd build
-  - git init
+  # - cd build
+  # - git init
   - git add --all .
   - git commit --message "Automatically update from travis-ci"
   - git push --force --quiet "https://${GH_TOKEN}@${GH_REF}" master:${P_BRANCH}
