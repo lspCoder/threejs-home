@@ -23,7 +23,7 @@ before_script:
 script:
   - npm run build
 after_success:
-  - cd dist
+  - cd build
   - git init
   - git add --all .
   - git commit --message "Automatically update from travis-ci"
