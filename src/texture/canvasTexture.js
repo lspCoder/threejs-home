@@ -1,5 +1,8 @@
 import { CanvasTexture } from 'three';
 
+/**
+ * @description 门的纹理
+ */
 export function createDoorTexture() {
   let canvas = document.createElement("canvas");
   // 不需要加到dom中,调试用
@@ -55,6 +58,9 @@ export function createDoorTexture() {
   return new CanvasTexture(canvas);
 }
 
+/**
+ * @description 门上面的原型logo纹理
+ */
 export function createLogoTexture() {
   let canvas = document.createElement("canvas");
   // 不需要加到dom中,调试用
@@ -100,4 +106,22 @@ export function createLogoTexture() {
   }
 
   return new CanvasTexture(canvas);
+}
+
+/**
+ * @description 渐变背景纹理
+ */
+export function createBackground() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext('2d');
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#1890ff');
+  gradient.addColorStop(1, '#e6f7ff');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
 }

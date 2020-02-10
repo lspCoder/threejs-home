@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { createDoorTexture, createLogoTexture } from '../../texture/canvasTexture';
 
-export default class Home extends THREE.Group {
+export default class Home extends THREE.Object3D {
 
   constructor() {
     super();
 
     this.name = "Home";
+    this.isCustomMesh = true;
 
     // 墙面的颜色
     this.wallColor = "#93886e";
@@ -24,6 +25,8 @@ export default class Home extends THREE.Group {
     this.createDoor();
     this.createWindow();
     this.createLogo();
+
+    this.setShadow(true);
   }
 
   // 房屋主体

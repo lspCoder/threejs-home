@@ -2,5 +2,6 @@ import Application from './application';
 
 
 window.onload = function () {
-  new Application({ showHelpers: false });
+  window.app = new Application({ showHelpers: false });
+  window.scene = app.scene;
 }

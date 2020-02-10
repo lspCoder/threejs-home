@@ -1,4 +1,15 @@
-import { WebGLRenderer, PerspectiveCamera, Scene, AxesHelper, CameraHelper, DirectionalLightHelper, Color } from 'three';
+import {
+  WebGLRenderer,
+  PerspectiveCamera,
+  Scene,
+  Raycaster,
+  GridHelper,
+  BoxHelper,
+  AxesHelper,
+  CameraHelper,
+  DirectionalLightHelper,
+  PCFSoftShadowMap
+} from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as Detector from "./vender/Detector";
 import * as dat from 'dat.gui';
@@ -6,6 +17,7 @@ import * as dat from 'dat.gui';
 
 import BasicLights from './objects/Lights';
 import SeedScene from './objects/Scene.js';
+import { createBackground } from "./texture/canvasTexture";
 
 
 export default class Application {
@@ -19,7 +31,6 @@ export default class Application {
     this.showHelpers = !!opts.showHelpers;
 
     if (Detector.webgl) {
-      this.bindEventHandlers();
       this.init();
       this.render();
     } else {
@@ -27,13 +38,17 @@ export default class Application {
       const warning = Detector.getWebGLErrorMessage();
       this.container.appendChild(warning);
     }
+
+    this.selectObject = null;
   }
 
   init() {
     this.setupScene();
     this.setupCamera();
     this.setupRenderer();
+    this.bindEventHandlers();
     this.setupControls();
+    this.setupRay();
     this.addLights();
     this.addObjects();
 
@@ -46,14 +61,16 @@ export default class Application {
    * Bind event handlers to the Application instance.
    */
   bindEventHandlers() {
+    if (!this.renderer) throw "renderer didn't init";
     window.addEventListener('resize', this.handleResize.bind(this));
-    window.addEventListener('click', this.handleClick.bind(this));
-    window.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    // this.renderer.domElement.addEventListener('click', this.handleClick.bind(this));
+    // this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
   }
 
   setupScene() {
     const scene = this.scene = new Scene();
-    scene.background = new Color(0x096DD9);
+    // background可以接收Color、Texture或CubeTexture
+    scene.background = createBackground();
     scene.position.y = -80;
   }
 
@@ -78,6 +95,8 @@ export default class Application {
     renderer.setSize(clientWidth, clientHeight);
     // 打开渲染器阴影
     renderer.shadowMap.enabled = true;
+    // 使阴影柔和
+    renderer.shadowMap.type = PCFSoftShadowMap;
     this.container.appendChild(renderer.domElement);
   }
 
@@ -86,6 +105,11 @@ export default class Application {
     // controls.maxPolarAngle = 0.9 * Math.PI / 2;
     controls.target.set(0, 5, 0);
     controls.update();
+  }
+
+  // 添加射线增加拾取
+  setupRay() {
+    this.raycaster = new Raycaster();
   }
 
   addObjects() {
@@ -101,7 +125,7 @@ export default class Application {
   render() {
     const onAnimationFrameHandler = (timeStamp) => {
       this.renderer.render(this.scene, this.camera);
-      this.seedScene.update && this.seedScene.update(timeStamp);
+      // this.seedScene.update && this.seedScene.update(timeStamp);
       window.requestAnimationFrame(onAnimationFrameHandler);
     }
     window.requestAnimationFrame(onAnimationFrameHandler);
@@ -115,12 +139,31 @@ export default class Application {
     return container;
   }
 
-  handleClick() {
-
+  handleClick(e) {
+    const [x, y] = this.getNDCCoordinates(event, true);
   }
 
-  handleMouseMove() {
+  handleMouseMove(event) {
+    if (this.selectObject) {
+      this.scene.remove(this.selectObject);
+    }
+    const [x, y] = this.getNDCCoordinates(event);
+    this.raycaster.setFromCamera({ x, y }, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
 
+    if (intersects.length > 0) {
+      const hexColor = Math.random() * 0xffffff;
+      const intersection = intersects[0];
+      // 选中整体标识
+      if (intersection.object.parent.isCustomMesh) {
+        this.selectObject = new BoxHelper(intersection.object.parent, 0xffff00);
+        this.scene.add(this.selectObject);
+      }
+
+      // const { direction, origin } = this.raycaster.ray;
+      // const arrow = new ArrowHelper(direction, origin, 100, hexColor);
+      // this.scene.add(arrow);
+    }
   }
 
   // todo
@@ -134,6 +177,50 @@ export default class Application {
     this.renderer.setSize(innerWidth, innerHeight);
   }
 
+  /**
+   * Convert screen coordinates into Normalized Device Coordinates [-1, +1].
+   * @see https://learnopengl.com/Getting-started/Coordinate-Systems
+   */
+  getNDCCoordinates(event, debug) {
+    const {
+      clientHeight,
+      clientWidth,
+      offsetLeft,
+      offsetTop,
+    } = this.renderer.domElement;
+
+    const xRelativePx = event.clientX - offsetLeft;
+    const x = (xRelativePx / clientWidth) * 2 - 1;
+
+    const yRelativePx = event.clientY - offsetTop;
+    const y = -(yRelativePx / clientHeight) * 2 + 1;
+
+    if (debug) {
+      const data = {
+        "Screen Coords (px)": { x: event.screenX, y: event.screenY },
+        "Canvas-Relative Coords (px)": { x: xRelativePx, y: yRelativePx },
+        "NDC (adimensional)": { x, y },
+      };
+      console.table(data, ["x", "y"]);
+    }
+    return [x, y];
+  }
+
+  getScreenCoordinates(xNDC, yNDC) {
+    const {
+      clientHeight,
+      clientWidth,
+      offsetLeft,
+      offsetTop,
+    } = this.renderer.domElement;
+
+    const xRelativePx = ((xNDC + 1) / 2) * clientWidth;
+    const yRelativePx = -0.5 * (yNDC - 1) * clientHeight;
+    const xScreen = xRelativePx + offsetLeft;
+    const yScreen = yRelativePx + offsetTop;
+    return [xScreen, yScreen];
+  }
+
   // 调试用
   setupHelpers() {
     let { scene, camera, lights } = this;
@@ -142,6 +229,9 @@ export default class Application {
 
     let axesHelper = new AxesHelper(500);
     scene.add(axesHelper);
+
+    var gridHelper = new GridHelper(320, 32);
+    scene.add(gridHelper);
 
     let cameraHelper = new CameraHelper(camera);
     scene.add(cameraHelper);

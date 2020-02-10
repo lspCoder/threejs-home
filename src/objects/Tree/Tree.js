@@ -6,6 +6,7 @@ export default class Tree extends THREE.Group {
     super();
 
     this.name = "Tree";
+    this.isCustomMesh = true;
 
     this.createLeaf();
     this.createTrunk();

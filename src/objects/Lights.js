@@ -10,10 +10,10 @@ export default class BasicLights extends Group {
     this.ambientLight = new AmbientLight(0x666666, .5);
 
     // 定向光
-    let dirLight = this.dirLight = new DirectionalLight(0xffffff, .5);
+    let dirLight = this.dirLight = new DirectionalLight(0xffffff, .7);
     dirLight.color.setHSL(0.1, 1, 0.95);
     dirLight.position.set(-20, 30, -10);
-    dirLight.position.multiplyScalar(30);
+    dirLight.position.multiplyScalar(10);
 
     // 开启灯光投射阴影
     dirLight.castShadow = true;
@@ -28,7 +28,7 @@ export default class BasicLights extends Group {
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = - d;
 
-    dirLight.shadow.camera.far = 3000;
+    dirLight.shadow.camera.far = 500;
     // 阴影贴图偏差,默认0,适当调整可减少阴影中的残影
     dirLight.shadow.bias = -0.0001;
 

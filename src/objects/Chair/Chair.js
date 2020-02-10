@@ -6,6 +6,8 @@ export default class Chair extends THREE.Group {
     super();
 
     this.name = "Chair";
+    this.isCustomMesh = true;
+
     this.width = 30;
 
     this.createBack();
