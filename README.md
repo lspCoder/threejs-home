@@ -8,6 +8,10 @@ The [advanced branch](https://github.com/edwinwebb/three-seed/tree/advanced) mai
 
 [Online Demo](https://lspcoder.github.io/threejs-home/)
 
+## screenshot
+![screenshot](./screenshot/screenshot.png)
+
+
 ## Running the development server
 To see the changes you make to the starter project go to the project folder in terminal and type...
 

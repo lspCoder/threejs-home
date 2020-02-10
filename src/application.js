@@ -103,7 +103,6 @@ export default class Application {
   setupControls() {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     // controls.maxPolarAngle = 0.9 * Math.PI / 2;
-    controls.target.set(0, 5, 0);
     controls.update();
   }
 
@@ -125,7 +124,7 @@ export default class Application {
   render() {
     const onAnimationFrameHandler = (timeStamp) => {
       this.renderer.render(this.scene, this.camera);
-      // this.seedScene.update && this.seedScene.update(timeStamp);
+      this.seedScene.update && this.seedScene.update(timeStamp);
       window.requestAnimationFrame(onAnimationFrameHandler);
     }
     window.requestAnimationFrame(onAnimationFrameHandler);
@@ -230,49 +229,58 @@ export default class Application {
     let axesHelper = new AxesHelper(500);
     scene.add(axesHelper);
 
-    var gridHelper = new GridHelper(320, 32);
+    let gridHelper = new GridHelper(320, 32);
     scene.add(gridHelper);
 
     let cameraHelper = new CameraHelper(camera);
     scene.add(cameraHelper);
-    var cameraGui = gui.addFolder("camera position");
+    let cameraGui = gui.addFolder("camera position");
     cameraGui.add(camera.position, 'x');
     cameraGui.add(camera.position, 'y');
     cameraGui.add(camera.position, 'z');
     cameraGui.open();
 
-    var dirLightHelper = new DirectionalLightHelper(dirLight, 5);
+    let dirLightHelper = new DirectionalLightHelper(dirLight, 5);
     scene.add(dirLightHelper);
 
-    var shadowCameraHelper = new CameraHelper(dirLight.shadow.camera);
+    let shadowCameraHelper = new CameraHelper(dirLight.shadow.camera);
     scene.add(shadowCameraHelper);
 
     const onChange = () => {
+      dirLight.target.updateMatrix();
       dirLightHelper.update();
-      shadowCameraHelper.update();
       dirLight.target.updateMatrixWorld();
+      dirLight.shadow.camera.updateProjectionMatrix();
+      shadowCameraHelper.update();
     };
 
     onChange();
 
     // 平行光的位置
-    var dirLightGui = gui.addFolder("DirectionalLight position");
+    let dirLightGui = gui.addFolder("DirectionalLight position");
     dirLightGui.add(dirLight.position, 'x').onChange(onChange);
     dirLightGui.add(dirLight.position, 'y').onChange(onChange);
     dirLightGui.add(dirLight.position, 'z').onChange(onChange);
     dirLightGui.open();
 
     // 平行光焦点
-    var dirTargetGui = gui.addFolder("DirectionalLight target position");
+    let dirTargetGui = gui.addFolder("DirectionalLight target position");
     dirTargetGui.add(dirLight.target.position, 'x').onChange(onChange);
     dirTargetGui.add(dirLight.target.position, 'y').onChange(onChange);
     dirTargetGui.add(dirLight.target.position, 'z').onChange(onChange);
     dirTargetGui.open();
 
     // 平行光强度
-    var dirIntensityGui = gui.addFolder("DirectionalLight intensity position");
+    let dirIntensityGui = gui.addFolder("DirectionalLight intensity position");
     dirIntensityGui.add(dirLight, 'intensity').onChange(onChange);
     dirIntensityGui.open();
+
+    // 平行光阴影
+    let dirLightShadowGui = gui.addFolder("DirectionalLight shadow");
+    dirLightShadowGui.add(dirLight.shadow, 'radius').onChange(onchange);
+    dirLightShadowGui.add(dirLight.shadow, 'bias').onChange(onchange);
+    dirLightShadowGui.add(dirLight.shadow.mapSize, 'width').step(10).onChange(onchange);
+    dirLightShadowGui.add(dirLight.shadow.mapSize, 'height').step(10).onChange(onchange);
 
   }
 
