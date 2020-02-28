@@ -1,4 +1,10 @@
-import { CanvasTexture } from 'three';
+import { CanvasTexture, CubeTextureLoader, RGBFormat } from 'three';
+import skypx from "./skyboxsun25deg/px.jpg";
+import skypy from "./skyboxsun25deg/py.jpg";
+import skypz from "./skyboxsun25deg/pz.jpg";
+import skynx from "./skyboxsun25deg/nx.jpg";
+import skyny from "./skyboxsun25deg/ny.jpg";
+import skynz from "./skyboxsun25deg/nz.jpg";
 
 /**
  * @description 门的纹理
@@ -124,4 +130,22 @@ export function createBackground() {
   const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
+}
+
+/**
+ * @description 创建全景背景
+ */
+export function createCubeTexture() {
+  // 定义好包含6长全景图片的数组urls
+  let urls = [
+    skypx,
+    skynx,
+    skypy,
+    skyny,
+    skypz,
+    skynz
+  ];
+  let reflectionCube = new CubeTextureLoader().load(urls);
+  reflectionCube.format = RGBFormat;
+  return reflectionCube;
 }

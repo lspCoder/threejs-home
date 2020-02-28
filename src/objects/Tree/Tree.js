@@ -10,6 +10,7 @@ export default class Tree extends THREE.Group {
 
     this.createLeaf();
     this.createTrunk();
+
   }
 
   // 创建树叶(球体)
@@ -34,5 +35,15 @@ export default class Tree extends THREE.Group {
     cylinder.castShadow = true;
     cylinder.receiveShadow = true;
     this.add(cylinder);
+  }
+
+  // 选中外边框
+  setSelectBorder(isSelect) {
+    if (isSelect) {
+      this.helper = new THREE.BoxHelper(this);
+      this.add(this.helper);
+    } else {
+      this.remove(this.helper);
+    }
   }
 }

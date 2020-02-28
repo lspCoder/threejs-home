@@ -17,7 +17,7 @@ import * as dat from 'dat.gui';
 
 import BasicLights from './objects/Lights';
 import SeedScene from './objects/Scene.js';
-import { createBackground } from "./texture/canvasTexture";
+import { createBackground, createCubeTexture } from "./texture/canvasTexture";
 
 
 export default class Application {
@@ -63,27 +63,29 @@ export default class Application {
   bindEventHandlers() {
     if (!this.renderer) throw "renderer didn't init";
     window.addEventListener('resize', this.handleResize.bind(this));
-    // this.renderer.domElement.addEventListener('click', this.handleClick.bind(this));
-    // this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    this.renderer.domElement.addEventListener('click', this.handleClick.bind(this));
+    this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove.bind(this));
   }
 
   setupScene() {
     const scene = this.scene = new Scene();
     // background可以接收Color、Texture或CubeTexture
-    scene.background = createBackground();
+    // scene.background = createBackground();
+    scene.background = createCubeTexture();
     scene.position.y = -80;
   }
 
   setupCamera() {
     // near,far的值会影响深度闪烁问题,可根据效果微调
-    const camera = this.camera = new PerspectiveCamera(35, this.container.offsetWidth / this.container.offsetHeight, 2, 10000);
+    const camera = this.camera = new PerspectiveCamera(35, this.container.offsetWidth / this.container.offsetHeight, 5, 10000);
     camera.up.set(0, 1, 0); //默认Y轴向上
     camera.rotateY(Math.PI / 4);
-    camera.position.set(-470, 240, 233);
+    camera.position.set(-470, 125, 308);
     camera.lookAt(this.scene.position);
     this.scene.add(camera);
     camera.updateProjectionMatrix();
   }
+
 
   setupRenderer() {
     const renderer = this.renderer = new WebGLRenderer({ antialias: true });
@@ -179,6 +181,7 @@ export default class Application {
   /**
    * Convert screen coordinates into Normalized Device Coordinates [-1, +1].
    * @see https://learnopengl.com/Getting-started/Coordinate-Systems
+   * @see https://img-blog.csdn.net/20150502094344891?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbHpkaW5n/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center
    */
   getNDCCoordinates(event, debug) {
     const {
