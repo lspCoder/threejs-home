@@ -1,6 +1,6 @@
 import { Group, DirectionalLight, AmbientLight } from 'three';
-const SHADOW_MAP_WIDTH = 2048,
-  SHADOW_MAP_HEIGHT = 2048;
+const SHADOW_MAP_WIDTH = 1024,
+  SHADOW_MAP_HEIGHT = 1024;
 
 export default class BasicLights extends Group {
   constructor() {

@@ -3,8 +3,10 @@ import {
   PerspectiveCamera,
   Scene,
   Raycaster,
+  Vector3,
   GridHelper,
   BoxHelper,
+  ArrowHelper,
   AxesHelper,
   CameraHelper,
   DirectionalLightHelper,
@@ -72,7 +74,6 @@ export default class Application {
     // background可以接收Color、Texture或CubeTexture
     // scene.background = createBackground();
     scene.background = createCubeTexture();
-    scene.position.y = -80;
   }
 
   setupCamera() {
@@ -80,10 +81,11 @@ export default class Application {
     const camera = this.camera = new PerspectiveCamera(35, this.container.offsetWidth / this.container.offsetHeight, 5, 10000);
     camera.up.set(0, 1, 0); //默认Y轴向上
     camera.rotateY(Math.PI / 4);
-    camera.position.set(-470, 125, 308);
-    camera.lookAt(this.scene.position);
-    this.scene.add(camera);
+    camera.position.set(-470, 275, 308);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrix();
     camera.updateProjectionMatrix();
+    this.scene.add(camera);
   }
 
 
@@ -104,7 +106,8 @@ export default class Application {
 
   setupControls() {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    // controls.maxPolarAngle = 0.9 * Math.PI / 2;
+    controls.target.set(0, 80, 0);
+    controls.maxPolarAngle = 0.9 * Math.PI / 2;
     controls.update();
   }
 
@@ -125,6 +128,8 @@ export default class Application {
 
   render() {
     const onAnimationFrameHandler = (timeStamp) => {
+      this.camera.updateMatrix();
+      this.camera.updateProjectionMatrix();
       this.renderer.render(this.scene, this.camera);
       this.seedScene.update && this.seedScene.update(timeStamp);
       window.requestAnimationFrame(onAnimationFrameHandler);
@@ -142,6 +147,15 @@ export default class Application {
 
   handleClick(e) {
     const [x, y] = this.getNDCCoordinates(event, true);
+    // this.raycaster.setFromCamera({ x, y }, this.camera);
+    // const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
+
+    // if (intersects.length > 0) {
+    //   const hexColor = Math.random() * 0xffffff;
+    //   const { direction, origin } = this.raycaster.ray;
+    //   const arrow = new ArrowHelper(direction, origin, 300, hexColor);
+    //   this.scene.add(arrow);
+    // }
   }
 
   handleMouseMove(event) {
@@ -156,10 +170,11 @@ export default class Application {
       const hexColor = Math.random() * 0xffffff;
       const intersection = intersects[0];
       // 选中整体标识
-      if (intersection.object.parent.isCustomMesh) {
-        this.selectObject = new BoxHelper(intersection.object.parent, 0xffff00);
-        this.scene.add(this.selectObject);
-      }
+      // intersection.object.material.color.setHex(hexColor);
+      this.selectObject = new BoxHelper(intersection.object, 0xffff00);
+      this.selectObject.updateMatrix();
+      this.selectObject.updateWorldMatrix();
+      this.scene.add(this.selectObject);
 
       // const { direction, origin } = this.raycaster.ray;
       // const arrow = new ArrowHelper(direction, origin, 100, hexColor);
@@ -250,6 +265,7 @@ export default class Application {
     scene.add(shadowCameraHelper);
 
     const onChange = () => {
+      cameraHelper.update();
       dirLight.target.updateMatrix();
       dirLightHelper.update();
       dirLight.target.updateMatrixWorld();

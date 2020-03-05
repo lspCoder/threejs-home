@@ -197,7 +197,6 @@ export default class Home extends THREE.Object3D {
     doorMaterial.map.offset.x = 0.50;
     doorMaterial.map.offset.y = 0.30;
     let mesh = new THREE.Mesh(geometry, doorMaterial);
-    window.doorMesh = mesh;
     mesh.rotateY(Math.PI / 2);
     doorGroup.add(mesh);
 
@@ -269,16 +268,13 @@ export default class Home extends THREE.Object3D {
 
   // 递归循环设置所有孩子的投射阴影
   setShadow(isOpenShadow) {
-    function loop(parent) {
-      for (let i = 0; i < parent.children.length; i++) {
-        let object = parent.children[i];
+    this.traverse(object => {
+      if (object.isMesh) {
         object.castShadow = isOpenShadow;
         object.receiveShadow = isOpenShadow;
-        if (object.children.length) {
-          loop(object);
-        }
+        object.updateMatrix();
+        object.updateWorldMatrix();
       }
-    }
-    loop(this);
+    })
   }
 }
