@@ -10,7 +10,8 @@ import {
   AxesHelper,
   CameraHelper,
   DirectionalLightHelper,
-  PCFSoftShadowMap
+  PCFSoftShadowMap,
+  Box3
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as Detector from "./vender/Detector";
@@ -19,7 +20,10 @@ import * as dat from 'dat.gui';
 
 import BasicLights from './objects/Lights';
 import SeedScene from './objects/Scene.js';
+import ViewBox from "./objects/ViewBox";
 import { createBackground, createCubeTexture } from "./texture/canvasTexture";
+import { getNDCCoordinates, getScreenCoordinates } from './utils.js';
+import TWEEN from "@tweenjs/tween.js";
 
 
 export default class Application {
@@ -33,7 +37,7 @@ export default class Application {
     this.showHelpers = !!opts.showHelpers;
 
     if (Detector.webgl) {
-      this.init();
+      this.init(opts);
       this.render();
     } else {
       // console.warn("WebGL NOT supported in your browser!");
@@ -44,7 +48,7 @@ export default class Application {
     this.selectObject = null;
   }
 
-  init() {
+  init(opts) {
     this.setupScene();
     this.setupCamera();
     this.setupRenderer();
@@ -53,6 +57,11 @@ export default class Application {
     this.setupRay();
     this.addLights();
     this.addObjects();
+
+
+    if(opts.viewBox) {
+      this.viewBox = new ViewBox(this, opts.viewBox);
+    }
 
     if (this.showHelpers) {
       this.setupHelpers();
@@ -72,16 +81,16 @@ export default class Application {
   setupScene() {
     const scene = this.scene = new Scene();
     // background可以接收Color、Texture或CubeTexture
-    // scene.background = createBackground();
-    scene.background = createCubeTexture();
+    scene.background = createBackground();
+    // scene.background = createCubeTexture();
   }
 
   setupCamera() {
     // near,far的值会影响深度闪烁问题,可根据效果微调
-    const camera = this.camera = new PerspectiveCamera(35, this.container.offsetWidth / this.container.offsetHeight, 5, 10000);
+    const camera = this.camera = new PerspectiveCamera(50, this.container.offsetWidth / this.container.offsetHeight, 1, 10000);
     camera.up.set(0, 1, 0); //默认Y轴向上
     camera.rotateY(Math.PI / 4);
-    camera.position.set(-470, 275, 308);
+    camera.position.set(-480, 275, 308);
     camera.lookAt(0, 0, 0);
     camera.updateMatrix();
     camera.updateProjectionMatrix();
@@ -107,7 +116,7 @@ export default class Application {
   setupControls() {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     controls.target.set(0, 80, 0);
-    controls.maxPolarAngle = 0.9 * Math.PI / 2;
+    controls.maxPolarAngle = Math.PI / 2;
     controls.update();
   }
 
@@ -130,8 +139,10 @@ export default class Application {
     const onAnimationFrameHandler = (timeStamp) => {
       this.camera.updateMatrix();
       this.camera.updateProjectionMatrix();
+      this.controls.update();
       this.renderer.render(this.scene, this.camera);
       this.seedScene.update && this.seedScene.update(timeStamp);
+      TWEEN.update(timeStamp);
       window.requestAnimationFrame(onAnimationFrameHandler);
     }
     window.requestAnimationFrame(onAnimationFrameHandler);
@@ -145,24 +156,57 @@ export default class Application {
     return container;
   }
 
-  handleClick(e) {
-    const [x, y] = this.getNDCCoordinates(event, true);
-    // this.raycaster.setFromCamera({ x, y }, this.camera);
-    // const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
+  resetCamera() {
+    this.controls.target.set(0, 80, 0);
+  }
 
-    // if (intersects.length > 0) {
-    //   const hexColor = Math.random() * 0xffffff;
-    //   const { direction, origin } = this.raycaster.ray;
-    //   const arrow = new ArrowHelper(direction, origin, 300, hexColor);
-    //   this.scene.add(arrow);
-    // }
+  /**
+   *
+   * @param {Box3} box 点击物体的包围盒
+   * @param {Vector3} direction 射线照射到物体的方向
+   * @param {number} distance 相机距离焦点的位置,默认为500
+   * @param {number} time 动画时间
+   */
+  flyByBox(box, direction ,distance = 500, time = 2000) {
+    const source = this.camera.position;
+    const boxCenter = box.getCenter(new Vector3());
+    const target = new Vector3();
+    // 射线方向向里需要取反
+    target.copy(direction.multiplyScalar(-1).multiplyScalar(distance).add(boxCenter));
+
+    const tween1 = new TWEEN.Tween(source);
+    tween1.to(target, time)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        this.camera.lookAt(target);
+        this.controls.update();
+      }).start();
+  }
+
+  handleClick(e) {
+    const [x, y] = getNDCCoordinates(this.renderer.domElement, event, true);
+    this.raycaster.setFromCamera({ x, y }, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
+
+    if (intersects.length > 0) {
+      const intersection = intersects[0];
+      const box = new Box3();
+      box.setFromObject(intersection.object);
+
+      this.flyByBox(box, this.raycaster.ray.direction);
+
+      // const hexColor = Math.random() * 0xffffff;
+      // const { direction, origin } = this.raycaster.ray;
+      // const arrow = new ArrowHelper(direction, origin, 300, hexColor);
+      // this.scene.add(arrow);
+    }
   }
 
   handleMouseMove(event) {
     if (this.selectObject) {
       this.scene.remove(this.selectObject);
     }
-    const [x, y] = this.getNDCCoordinates(event);
+    const [x, y] = getNDCCoordinates(this.renderer.domElement, event);
     this.raycaster.setFromCamera({ x, y }, this.camera);
     const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
 
@@ -171,7 +215,7 @@ export default class Application {
       const intersection = intersects[0];
       // 选中整体标识
       // intersection.object.material.color.setHex(hexColor);
-      this.selectObject = new BoxHelper(intersection.object, 0xffff00);
+      this.selectObject = new BoxHelper(intersection.object.parent, 0xffff00);
       this.selectObject.updateMatrix();
       this.selectObject.updateWorldMatrix();
       this.scene.add(this.selectObject);
@@ -191,51 +235,6 @@ export default class Application {
     this.camera.aspect = innerWidth / innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(innerWidth, innerHeight);
-  }
-
-  /**
-   * Convert screen coordinates into Normalized Device Coordinates [-1, +1].
-   * @see https://learnopengl.com/Getting-started/Coordinate-Systems
-   * @see https://img-blog.csdn.net/20150502094344891?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbHpkaW5n/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center
-   */
-  getNDCCoordinates(event, debug) {
-    const {
-      clientHeight,
-      clientWidth,
-      offsetLeft,
-      offsetTop,
-    } = this.renderer.domElement;
-
-    const xRelativePx = event.clientX - offsetLeft;
-    const x = (xRelativePx / clientWidth) * 2 - 1;
-
-    const yRelativePx = event.clientY - offsetTop;
-    const y = -(yRelativePx / clientHeight) * 2 + 1;
-
-    if (debug) {
-      const data = {
-        "Screen Coords (px)": { x: event.screenX, y: event.screenY },
-        "Canvas-Relative Coords (px)": { x: xRelativePx, y: yRelativePx },
-        "NDC (adimensional)": { x, y },
-      };
-      console.table(data, ["x", "y"]);
-    }
-    return [x, y];
-  }
-
-  getScreenCoordinates(xNDC, yNDC) {
-    const {
-      clientHeight,
-      clientWidth,
-      offsetLeft,
-      offsetTop,
-    } = this.renderer.domElement;
-
-    const xRelativePx = ((xNDC + 1) / 2) * clientWidth;
-    const yRelativePx = -0.5 * (yNDC - 1) * clientHeight;
-    const xScreen = xRelativePx + offsetLeft;
-    const yScreen = yRelativePx + offsetTop;
-    return [xScreen, yScreen];
   }
 
   // 调试用

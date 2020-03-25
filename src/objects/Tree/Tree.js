@@ -25,7 +25,7 @@ export default class Tree extends THREE.Group {
   // 创建树干(圆柱体)
   createTrunk() {
     let geometry = new THREE.CylinderGeometry(3, 3, 22, 32);
-    let material = new THREE.MeshPhongMaterial({ color: new THREE.Color("rgb(92,46,3)"), side: THREE.DoubleSide, emissive: "#94561c", shininess: 50 });
+    let material = new THREE.MeshPhongMaterial({ color: new THREE.Color("rgb(92,46,3)"), side: THREE.DoubleSide, emissive: "#94561c", shininess: 1 });
     let cylinder = new THREE.Mesh(geometry, material);
     cylinder.position.y = 7;
     this.add(cylinder);

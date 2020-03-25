@@ -1,8 +1,14 @@
 import Application from './application';
 
 
-window.onload = function () {
-  window.app = new Application({ showHelpers: false });
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = new Application({
+    showHelpers: false,
+    viewBox: {
+      size: [150, 150]
+    }
+  });
   window.scene = app.scene;
-}
+})
+
 

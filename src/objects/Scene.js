@@ -18,7 +18,7 @@ export default class SeedScene extends THREE.Group {
   // 添加地面
   addGround() {
     var geometry = new THREE.BoxGeometry(200, 250, 3);
-    var material = new THREE.MeshLambertMaterial({ color: new THREE.Color("rgb(173,146,167)"), side: THREE.DoubleSide, emissive: "#5a5a5a" });
+    var material = new THREE.MeshLambertMaterial({ color: new THREE.Color("rgb(173,146,167)"), side: THREE.DoubleSide, emissive: "#404040" });
     var plane = new THREE.Mesh(geometry, material);
     // 打开接受阴影
     plane.receiveShadow = true;
@@ -78,6 +78,6 @@ export default class SeedScene extends THREE.Group {
   }
 
   update(timeStamp) {
-    this.rotation.y = timeStamp / 10000;
+    // this.rotation.y = timeStamp / 10000;
   }
 }

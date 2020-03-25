@@ -11,6 +11,9 @@ module.exports = {
   },
   target: 'web',
   devtool: 'source-map',
+  devServer: {
+    contentBase: path.join(__dirname, 'assets')
+  },
   module: {
     rules: [
       {
