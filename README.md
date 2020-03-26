@@ -1,5 +1,7 @@
 # Three Seed
 
+[![Build Status](https://travis-ci.org/lspCoder/threejs-home.svg?branch=master)](https://travis-ci.org/lspCoder/threejs-home)
+
 Three.js starter project boilerplate bundled with Webpack.
 
 This project will help you get started on your next three.js project and provide a foundation for extension. It sets up a simple scene, camera and renderer in a modern Javascript environment.
