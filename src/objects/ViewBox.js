@@ -2,7 +2,7 @@
  * @Author: lsp
  * @Date: 2020-03-24 16:54:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-26 14:03:11
+ * @Last Modified time: 2020-03-26 14:54:05
  */
 import {
   WebGLRenderer,
@@ -32,6 +32,8 @@ import png4 from "../texture/viewBox/4.png";
 import png5 from "../texture/viewBox/5.png";
 import png6 from "../texture/viewBox/6.png";
 
+import resetIcon from "../assets/images/home.png";
+
 const faceMap = {};
 faceMap[0] = 'front';
 faceMap[1] = 'back';
@@ -57,6 +59,7 @@ export default class ViewBox {
 
   init(options) {
     this.createContainer();
+    this.createResetButton();
     this.createScene(options);
     this.createCube();
     this.createArrows();
@@ -96,6 +99,20 @@ export default class ViewBox {
     scene.add(camera);
 
     this.container.appendChild(renderer.domElement);
+  }
+
+  createResetButton() {
+    let dom = document.createElement('img');
+    dom.src = resetIcon;
+    dom.style.width = '25px';
+    dom.style.height = '25px';
+    dom.style.position = 'absolute';
+    dom.style.right = '5px';
+    dom.style.top = '5px';
+    dom.addEventListener('click', () => {
+      this.app.resetCamera();
+    }, false);
+    this.container.appendChild(dom);
   }
 
   // 创建导航立方体

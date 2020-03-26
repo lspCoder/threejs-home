@@ -23,7 +23,7 @@ import SeedScene from './objects/Scene.js';
 import ViewBox from "./objects/ViewBox";
 import { createBackground, createCubeTexture } from "./texture/canvasTexture";
 import { getNDCCoordinates, getScreenCoordinates } from './utils.js';
-import TWEEN from "@tweenjs/tween.js";
+import TWEEN, { Tween } from "@tweenjs/tween.js";
 
 
 export default class Application {
@@ -86,11 +86,12 @@ export default class Application {
   }
 
   setupCamera() {
+    this.defaultCameraPosition = [-480, 275, 308];
     // near,far的值会影响深度闪烁问题,可根据效果微调
     const camera = this.camera = new PerspectiveCamera(50, this.container.offsetWidth / this.container.offsetHeight, 1, 10000);
     camera.up.set(0, 1, 0); //默认Y轴向上
     camera.rotateY(Math.PI / 4);
-    camera.position.set(-480, 275, 308);
+    camera.position.set(...this.defaultCameraPosition);
     camera.lookAt(0, 0, 0);
     camera.updateMatrix();
     camera.updateProjectionMatrix();
@@ -136,6 +137,7 @@ export default class Application {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     controls.target.set(0, 80, 0);
     // controls.maxPolarAngle = Math.PI / 2;
+    controls.saveState();
     controls.update();
   }
 
@@ -176,7 +178,18 @@ export default class Application {
   }
 
   resetCamera() {
-    this.controls.target.set(0, 80, 0);
+    let source = this.camera.position;
+    let target = {
+      x: this.defaultCameraPosition[0],
+      y: this.defaultCameraPosition[1],
+      z: this.defaultCameraPosition[2]
+    };
+    const tween1 = new TWEEN.Tween(source);
+    tween1.to(target, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate((obj) => {
+        this.camera.position.set(obj.x, obj.y, obj.z);
+      }).start();
   }
 
   /**
