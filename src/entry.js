@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
       size: [150, 150]
     }
   });
-  window.scene = app.scene;
 })
 
 

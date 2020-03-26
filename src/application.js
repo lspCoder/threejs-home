@@ -97,6 +97,25 @@ export default class Application {
     this.scene.add(camera);
   }
 
+  setCameraPositionByDirection(type) {
+    let positionMap = {
+      'front': [-500, 0, 0],
+      'back': [500, 0, 0],
+      'left': [0, 0, -500],
+      'right': [0, 0, 500],
+      'top': [0, 500, 0],
+      'bottom': [0, -500, 0],
+    }
+    const tween = new TWEEN.Tween(this.camera.position);
+    const target = new Vector3(...positionMap[type]);
+    tween.to(target, 2000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        this.camera.lookAt(target);
+        this.controls.update();
+      }).start();
+  }
+
 
   setupRenderer() {
     const renderer = this.renderer = new WebGLRenderer({ antialias: true });
@@ -116,7 +135,7 @@ export default class Application {
   setupControls() {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     controls.target.set(0, 80, 0);
-    controls.maxPolarAngle = Math.PI / 2;
+    // controls.maxPolarAngle = Math.PI / 2;
     controls.update();
   }
 

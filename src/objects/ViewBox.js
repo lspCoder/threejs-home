@@ -2,9 +2,27 @@
  * @Author: lsp
  * @Date: 2020-03-24 16:54:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-25 17:31:34
+ * @Last Modified time: 2020-03-26 14:03:11
  */
-import { WebGLRenderer, OrthographicCamera, Scene, BoxGeometry, MeshBasicMaterial, Mesh, Raycaster, TextureLoader, Object3D, ArrowHelper, Vector3, Color, Group } from 'three';
+import {
+  WebGLRenderer,
+  OrthographicCamera,
+  Scene,
+  BoxGeometry,
+  MeshBasicMaterial,
+  Mesh,
+  Raycaster,
+  TextureLoader,
+  ArrowHelper,
+  Vector3,
+  Color,
+  Group,
+  AxesHelper,
+  CameraHelper,
+  GridHelper
+} from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import { getNDCCoordinates } from '../utils';
 
 import png1 from "../texture/viewBox/1.png";
@@ -13,6 +31,14 @@ import png3 from "../texture/viewBox/3.png";
 import png4 from "../texture/viewBox/4.png";
 import png5 from "../texture/viewBox/5.png";
 import png6 from "../texture/viewBox/6.png";
+
+const faceMap = {};
+faceMap[0] = 'front';
+faceMap[1] = 'back';
+faceMap[2] = 'top';
+faceMap[3] = 'bottom';
+faceMap[4] = 'left';
+faceMap[5] = 'right';
 
 export default class ViewBox {
 
@@ -23,6 +49,9 @@ export default class ViewBox {
     // 高亮
     this.activeOpactiy = 0.58;
     this.lastHoverMaterial = null;
+    this.group = new Group();
+    let { controls } = this.app;
+    this.group.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     this.init(options);
   }
 
@@ -54,12 +83,16 @@ export default class ViewBox {
     renderer.setSize(width, height);
 
     let scene = this.scene = new Scene();
+    window.scene = scene;
 
     let camera = this.camera = new OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 1000);
     // z轴朝上
     camera.up.set(0, 0, 1);
     // camera.position.copy(this.app.camera.position);
-    camera.lookAt(scene.position);
+    camera.position.set(0, 100, 0);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrix();
+    camera.updateProjectionMatrix();
     scene.add(camera);
 
     this.container.appendChild(renderer.domElement);
@@ -77,69 +110,74 @@ export default class ViewBox {
       new MeshBasicMaterial({ map: new TextureLoader().load(png6), opacity: this.normalOpactiy, transparent: true }),
     ]
     let mesh = new Mesh(geometry, materials);
-    mesh.position.z = -100;
     let { controls } = this.app;
-    mesh.rotation.set(controls.getAzimuthalAngle(), 0, -controls.getPolarAngle());
+    mesh.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     this.scene.add(mesh);
     this.mesh = mesh;
+
+    // test
+    // let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    // controls.target.set(0, 0, 0);
+    // controls.update();
+    // let cameraHelper = new CameraHelper(this.camera);
+    // scene.add(cameraHelper);
   }
 
   // 创建导航箭头
   createArrows() {
-    let arrows = new Group();
+    let arrows = this.arrows = new Group();
     let orgin = new Vector3(0, 0, 0);
     let arrowColor = new Color(0x666666);
 
     {
       // top
       let dir = new Vector3(0, 0, 1);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
     {
       // front
       let dir = new Vector3(0, 1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
     {
       // right
       let dir = new Vector3(1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
     {
       // bottom
       let dir = new Vector3(0, 0, -1);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
     {
       // back
       let dir = new Vector3(0, -1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
     {
       // left
       let dir = new Vector3(-1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor);
+      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
       arrows.add(arrow);
-      this.scene.add(arrow);
     }
+    let { controls } = this.app;
+    arrows.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
+    this.scene.add(arrows);
   }
 
   bindEvent() {
     let { controls } = this.app;
     // 监听主画布变更事件
-    this.app.controls.addEventListener('change', () => {
+    controls.addEventListener('change', () => {
       console.log('change');
-      this.mesh.rotation.set(controls.getAzimuthalAngle(), 0, -controls.getPolarAngle());
+      // getAzimuthalAngle获取水平角度getPolarAngle获取垂直角度
+      this.mesh.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
+      this.arrows.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     })
 
     this.container.addEventListener('mousemove', this.handleMousemove.bind(this), false);
@@ -173,7 +211,7 @@ export default class ViewBox {
       // let faceIndex = Math.floor(interserts[0].faceIndex / 2);
       let faceIndex = interserts[0].face.materialIndex;
       object.material[faceIndex].opacity = this.activeOpactiy;
-      this.lastHoverMaterial = object.material[faceIndex]
+      this.lastHoverMaterial = object.material[faceIndex];
     }
   }
 
@@ -182,9 +220,9 @@ export default class ViewBox {
     this.raycaster.setFromCamera({ x, y }, this.camera);
     let interserts = this.raycaster.intersectObject(this.mesh);
     if (interserts.length > 0) {
-      let object = interserts[0].object;
       let faceIndex = interserts[0].face.materialIndex;
       console.log(faceIndex);
+      this.app.setCameraPositionByDirection(faceMap[faceIndex]);
     }
   }
 
