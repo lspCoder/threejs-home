@@ -9,7 +9,7 @@ The [advanced branch](https://github.com/edwinwebb/three-seed/tree/advanced) mai
 [Online Demo](https://lspcoder.github.io/threejs-home/)
 
 ## screenshot
-![screenshot](./screenshot/screenshot.png)
+![screenshot](./screenshot/screenshot.gif)
 
 
 ## Running the development server
