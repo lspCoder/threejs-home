@@ -2,9 +2,9 @@
  * @Author: lsp
  * @Date: 2020-03-27 16:50:12
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-29 15:04:34
+ * @Last Modified time: 2020-03-29 17:31:07
  */
-export default class BaseInteraction {
+export default class BasePlugin {
 
   constructor(app) {
     this.app = app;
@@ -22,14 +22,19 @@ export default class BaseInteraction {
   addListener() {
     for (var i = 0; i < arguments.length; i++) {
       var type = arguments[i];
-      this.renderer.domElement.addEventListener(type, this['handle_' + type].bind(this), false);
+      const name = `_${type}_`;
+      this[name] = (e) => {
+        this['handle_' + type].call(this, e);
+      }
+      this.renderer.domElement.addEventListener(type, this[name], false);
     }
   }
 
   removeListener() {
     for (var i = 0; i < arguments.length; i++) {
       var type = arguments[i];
-      this.renderer.domElement.removeEventListener(type, this['handle_' + type], false);
+      const name = `_${type}_`;
+      this.renderer.domElement.removeEventListener(type, this[name]);
     }
   }
 

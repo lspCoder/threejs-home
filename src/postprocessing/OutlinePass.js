@@ -2,7 +2,17 @@
  * @Author: lsp
  * @Date: 2020-03-29 15:33:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-29 16:23:39
+ * @Last Modified time: 2020-03-29 17:44:30
+ * @description 外边框选中效果
+ * @example
+ * var params = {
+				edgeStrength: 3.0,  //外边框粗细
+				edgeGlow: 0.0,  // 发光虚化
+				edgeThickness: 1.0, //
+				pulsePeriod: 0,
+				rotate: false,
+				usePatternTexture: false
+			};
  */
 import { Pass, CopyShader } from '@johh/three-effectcomposer';
 import {

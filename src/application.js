@@ -53,7 +53,8 @@ export default class Application {
       this.container.appendChild(warning);
     }
 
-    this.selectObject = null;
+    this.pluginMap = new Map();
+    // this.selectObject = null;
   }
 
   init(opts) {
@@ -377,6 +378,28 @@ export default class Application {
     this.renderer.setSize(innerWidth, innerHeight);
     this.composer.setSize(innerWidth, innerHeight);
     this.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+  }
+
+  /**
+   *
+   * @param {String} name
+   * @param {BasePlugin} plugin
+   * @description 注册插件
+   */
+  registerPLugin(name, plugin) {
+    this.pluginMap.set(name, plugin);
+    plugin.setUp();
+  }
+
+  /**
+   *
+   * @param {String} name
+   * @description 卸载插件
+   */
+  unRegisterPlugin(name) {
+    let plugin = this.pluginMap.get(name);
+    plugin.tearDown();
+    this.pluginMap.delete(name);
   }
 
   // 销毁方法

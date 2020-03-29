@@ -4,7 +4,8 @@ import { Vector2 } from "three";
  * @Author: lsp
  * @Date: 2020-03-29 16:09:38
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-29 16:12:44
+ * @Last Modified time: 2020-03-29 17:39:03
+ * @description Fast Approximate Anti-Aliasing 快速近似抗锯齿
  */
 const FXAAShader = {
 
