@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
       size: [150, 150]
     }
   });
-  app.registerPLugin('marker', new Marker(app));
-  app.registerPLugin('htmlMarker', new HTMLMarker(app));
+  // app.registerPLugin('marker', new Marker(app));
+  // app.registerPLugin('htmlMarker', new HTMLMarker(app));
 })
 
 
