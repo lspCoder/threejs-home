@@ -14,6 +14,7 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@johh/three-effectcomposer": "0.0.7",
     "@tweenjs/tween.js": "^18.5.0",
     "core-js": "^3.6.4",
     "dat.gui": "^0.7.6",

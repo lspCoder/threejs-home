@@ -2,7 +2,7 @@
  * @Author: lsp
  * @Date: 2020-03-24 16:54:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-26 14:54:05
+ * @Last Modified time: 2020-03-27 20:42:14
  */
 import {
   WebGLRenderer,
@@ -19,9 +19,10 @@ import {
   Group,
   AxesHelper,
   CameraHelper,
-  GridHelper
+  GridHelper,
+  Math as MathUtils,
+  Object3D
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { getNDCCoordinates } from '../utils';
 
@@ -50,6 +51,9 @@ export default class ViewBox {
     this.normalOpactiy = 0.99;
     // 高亮
     this.activeOpactiy = 0.58;
+
+    this.normalArrowColor = new Color(0x666666);
+    this.hoverArrowColor = new Color(0x333333);
     this.lastHoverMaterial = null;
     this.group = new Group();
     let { controls } = this.app;
@@ -63,7 +67,6 @@ export default class ViewBox {
     this.createScene(options);
     this.createCube();
     this.createArrows();
-    this.render();
     this.createRayCaster();
     this.bindEvent();
   }
@@ -88,12 +91,7 @@ export default class ViewBox {
     let scene = this.scene = new Scene();
     window.scene = scene;
 
-    let camera = this.camera = new OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 1000);
-    // z轴朝上
-    camera.up.set(0, 0, 1);
-    // camera.position.copy(this.app.camera.position);
-    camera.position.set(0, 100, 0);
-    camera.lookAt(0, 0, 0);
+    let camera = this.camera = new OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 10000);
     camera.updateMatrix();
     camera.updateProjectionMatrix();
     scene.add(camera);
@@ -101,6 +99,7 @@ export default class ViewBox {
     this.container.appendChild(renderer.domElement);
   }
 
+  // 创建重置按钮
   createResetButton() {
     let dom = document.createElement('img');
     dom.src = resetIcon;
@@ -111,6 +110,12 @@ export default class ViewBox {
     dom.style.top = '5px';
     dom.addEventListener('click', () => {
       this.app.resetCamera();
+    }, false);
+    dom.addEventListener('mouseover', () => {
+      dom.style.opacity = 0.5;
+    }, false);
+    dom.addEventListener('mouseleave', () => {
+      dom.style.opacity = 1;
     }, false);
     this.container.appendChild(dom);
   }
@@ -127,8 +132,6 @@ export default class ViewBox {
       new MeshBasicMaterial({ map: new TextureLoader().load(png6), opacity: this.normalOpactiy, transparent: true }),
     ]
     let mesh = new Mesh(geometry, materials);
-    let { controls } = this.app;
-    mesh.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     this.scene.add(mesh);
     this.mesh = mesh;
 
@@ -142,48 +145,45 @@ export default class ViewBox {
 
   // 创建导航箭头
   createArrows() {
-    let arrows = this.arrows = new Group();
+    let arrows = this.arrows = new Object3D();
     let orgin = new Vector3(0, 0, 0);
-    let arrowColor = new Color(0x666666);
 
     {
-      // top
       let dir = new Vector3(0, 0, 1);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'left';
       arrows.add(arrow);
     }
     {
-      // front
       let dir = new Vector3(0, 1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'top';
       arrows.add(arrow);
     }
     {
-      // right
       let dir = new Vector3(1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'front';
       arrows.add(arrow);
     }
     {
-      // bottom
       let dir = new Vector3(0, 0, -1);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'right';
       arrows.add(arrow);
     }
     {
-      // back
       let dir = new Vector3(0, -1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'bottom';
       arrows.add(arrow);
     }
     {
-      // left
       let dir = new Vector3(-1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, arrowColor, 25, 20);
+      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      arrow.name = 'back';
       arrows.add(arrow);
     }
-    let { controls } = this.app;
-    arrows.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     this.scene.add(arrows);
   }
 
@@ -193,8 +193,8 @@ export default class ViewBox {
     controls.addEventListener('change', () => {
       console.log('change');
       // getAzimuthalAngle获取水平角度getPolarAngle获取垂直角度
-      this.mesh.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
-      this.arrows.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
+      // this.mesh.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
+      // this.arrows.rotation.set(controls.getPolarAngle(), -controls.getAzimuthalAngle(), 0);
     })
 
     this.container.addEventListener('mousemove', this.handleMousemove.bind(this), false);
@@ -205,46 +205,94 @@ export default class ViewBox {
     this.raycaster = new Raycaster();
   }
 
-  render() {
-    const animate = () => {
-      this.camera.updateMatrix();
-      this.camera.updateProjectionMatrix();
-      this.renderer.render(this.scene, this.camera);
-      window.requestAnimationFrame(animate);
-    }
-    window.requestAnimationFrame(animate);
+  render(position, target, up) {
+    // 同步主场景的视角
+    this.camera.position.copy(position);
+    this.camera.position.sub(target);
+    this.camera.up.copy(up);
+    this.camera.lookAt(this.scene.position);
+
+    // 计算箭头的角度，垂直镜头视角的箭头透明度为0
+    let front = this.camera.getWorldDirection(new Vector3());
+    this.arrows.children.map((child) => {
+      let direction = child.getWorldDirection(new Vector3());
+      let theta = 2 * window.Math.abs(front.dot(direction));
+      theta = 1 - MathUtils.clamp(theta, -1, 1);
+      child.line.material.opacity = theta;
+      child.cone.material.opacity = theta;
+    })
+
+    this.renderer.render(this.scene, this.camera);
   }
 
   handleMousemove(event) {
     if (this.lastHoverMaterial) {
       this.lastHoverMaterial.opacity = this.normalOpactiy;
     }
+    if (this.lastHoverArrow) {
+      this.lastHoverArrow.setColor(this.normalArrowColor);
+    }
     const [x, y] = getNDCCoordinates(this.renderer.domElement, event);
     this.raycaster.setFromCamera({ x, y }, this.camera);
-    let interserts = this.raycaster.intersectObject(this.mesh);
+    let interserts = this.raycaster.intersectObjects(this.arrows.children, true);
+
     if (interserts.length > 0) {
       let object = interserts[0].object;
-      // 这两句等价效果face包含正反两面，一共12个面
-      // let faceIndex = Math.floor(interserts[0].faceIndex / 2);
-      let faceIndex = interserts[0].face.materialIndex;
-      object.material[faceIndex].opacity = this.activeOpactiy;
-      this.lastHoverMaterial = object.material[faceIndex];
+      object.parent.setColor(this.hoverArrowColor);
+      this.lastHoverArrow = object.parent;
+    } else {
+      interserts = this.raycaster.intersectObject(this.mesh);
+      if (interserts.length > 0) {
+        let object = interserts[0].object;
+        // 这两句等价效果face包含正反两面，一共12个面
+        // let faceIndex = Math.floor(interserts[0].faceIndex / 2);
+        let faceIndex = interserts[0].face.materialIndex;
+        object.material[faceIndex].opacity = this.activeOpactiy;
+        this.lastHoverMaterial = object.material[faceIndex];
+      }
     }
   }
 
   handleClick(event) {
     const [x, y] = getNDCCoordinates(this.renderer.domElement, event);
     this.raycaster.setFromCamera({ x, y }, this.camera);
-    let interserts = this.raycaster.intersectObject(this.mesh);
+    let interserts = this.raycaster.intersectObjects(this.arrows.children, true);
+
     if (interserts.length > 0) {
-      let faceIndex = interserts[0].face.materialIndex;
-      console.log(faceIndex);
-      this.app.setCameraPositionByDirection(faceMap[faceIndex]);
+      let object = interserts[0].object;
+      let type = object.parent.name;
+      this.app.setCameraPositionByDirection(type);
+    } else {
+      interserts = this.raycaster.intersectObject(this.mesh);
+      if (interserts.length > 0) {
+        let faceIndex = interserts[0].face.materialIndex;
+        this.app.setCameraPositionByDirection(faceMap[faceIndex]);
+      }
     }
   }
 
   resetCamera() {
     this.app.resetCamera();
+  }
+
+  // todo
+  dispose() {
+    this.container.removeEventListener('mousemove', this.handleMousemove);
+    this.container.removeEventListener('click', this.handleClick);
+
+    this.renderer.clear();
+    this.renderer.dispose();
+
+    this.parent.removeChild(this.container);
+    this.container = null;
+    this.activeOpactiy = null;
+    this.normalOpactiy = null;
+    this.app = null;
+    this.camera = null;
+    this.renderer = null;
+    this.raycaster = null;
+    this.lastHoverMaterial.dispose();
+    this.lastHoverMaterial = null;
   }
 
 }

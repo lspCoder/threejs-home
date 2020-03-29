@@ -6,11 +6,9 @@ export default class Tree extends THREE.Group {
     super();
 
     this.name = "Tree";
-    this.isCustomMesh = true;
 
     this.createLeaf();
     this.createTrunk();
-    this.setShadow(true);
   }
 
   // 创建树叶(球体)
@@ -31,15 +29,4 @@ export default class Tree extends THREE.Group {
     this.add(cylinder);
   }
 
-  // 递归循环设置所有孩子的投射阴影
-  setShadow(isOpenShadow) {
-    this.traverse(object => {
-      if (object.isMesh) {
-        object.castShadow = isOpenShadow;
-        object.receiveShadow = isOpenShadow;
-        object.updateMatrix();
-        object.updateWorldMatrix();
-      }
-    })
-  }
 }

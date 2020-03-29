@@ -25,8 +25,6 @@ export default class Home extends THREE.Object3D {
     this.createDoor();
     this.createWindow();
     this.createLogo();
-
-    this.setShadow(true);
   }
 
   // 房屋主体
@@ -266,15 +264,4 @@ export default class Home extends THREE.Object3D {
     return windowGroup;
   }
 
-  // 递归循环设置所有孩子的投射阴影
-  setShadow(isOpenShadow) {
-    this.traverse(object => {
-      if (object.isMesh) {
-        object.castShadow = isOpenShadow;
-        object.receiveShadow = isOpenShadow;
-        object.updateMatrix();
-        object.updateWorldMatrix();
-      }
-    })
-  }
 }

@@ -13,6 +13,9 @@ export default class SeedScene extends THREE.Group {
     this.addTrees();
     this.addChairs();
     this.addHome();
+
+    // 主场景向下偏移移动到中心
+    this.position.y = -80;
   }
 
   // 添加地面

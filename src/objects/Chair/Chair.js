@@ -13,8 +13,6 @@ export default class Chair extends THREE.Group {
     this.createBack();
     this.createBody();
     this.createFoot();
-
-    this.setShadow(true);
   }
 
   // 创建椅背
@@ -81,18 +79,6 @@ export default class Chair extends THREE.Group {
     group.position.z = -6.5;
     group.position.y = -4;
     this.add(group);
-  }
-
-  // 递归循环设置所有孩子的投射阴影
-  setShadow(isOpenShadow) {
-    this.traverse(object => {
-      if (object.isMesh) {
-        object.castShadow = isOpenShadow;
-        object.receiveShadow = isOpenShadow;
-        object.updateMatrix();
-        object.updateWorldMatrix();
-      }
-    })
   }
 
 }

@@ -4,6 +4,7 @@ import {
   Scene,
   Raycaster,
   Vector3,
+  Vector2,
   GridHelper,
   BoxHelper,
   ArrowHelper,
@@ -11,7 +12,10 @@ import {
   CameraHelper,
   DirectionalLightHelper,
   PCFSoftShadowMap,
-  Box3
+  Box3,
+  Math as MathUtils,
+  TextureLoader,
+  RepeatWrapping
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as Detector from "./vender/Detector";
@@ -24,7 +28,11 @@ import ViewBox from "./objects/ViewBox";
 import { createBackground, createCubeTexture } from "./texture/canvasTexture";
 import { getNDCCoordinates, getScreenCoordinates } from './utils.js';
 import TWEEN, { Tween } from "@tweenjs/tween.js";
+import EffectComposer, { RenderPass, ShaderPass } from '@johh/three-effectcomposer';
+import OutlinePass from './postprocessing/OutlinePass';
+import FXAAShader from './postprocessing/FXAAShader';
 
+import patternImage from "./texture/images/tri_pattern.jpg";
 
 export default class Application {
   constructor(opts = {}) {
@@ -56,12 +64,15 @@ export default class Application {
     this.setupControls();
     this.setupRay();
     this.addLights();
-    this.addObjects();
+    this.loadScene();
+    this.addPostProcess();
 
-
-    if(opts.viewBox) {
+    if (opts.viewBox) {
       this.viewBox = new ViewBox(this, opts.viewBox);
     }
+
+    // 是否开启阴影
+    this.switchShadow(opts.openShadow);
 
     if (this.showHelpers) {
       this.setupHelpers();
@@ -86,11 +97,10 @@ export default class Application {
   }
 
   setupCamera() {
-    this.defaultCameraPosition = [-480, 275, 308];
+    this.defaultCameraPosition = [-1, 1, 1];
     // near,far的值会影响深度闪烁问题,可根据效果微调
-    const camera = this.camera = new PerspectiveCamera(50, this.container.offsetWidth / this.container.offsetHeight, 1, 10000);
+    const camera = this.camera = new PerspectiveCamera(50, this.container.offsetWidth / this.container.offsetHeight, 1, 1000);
     camera.up.set(0, 1, 0); //默认Y轴向上
-    camera.rotateY(Math.PI / 4);
     camera.position.set(...this.defaultCameraPosition);
     camera.lookAt(0, 0, 0);
     camera.updateMatrix();
@@ -98,16 +108,22 @@ export default class Application {
     this.scene.add(camera);
   }
 
+  // todo: 需要根据场景包围盒动态计算
   setCameraPositionByDirection(type) {
+    if (!this.sceneBox) return;
+    const boxSize = this.sceneBox.getSize(new Vector3());
+    const boxCenter = this.sceneBox.getCenter(new Vector3());
     let positionMap = {
-      'front': [-500, 0, 0],
-      'back': [500, 0, 0],
-      'left': [0, 0, -500],
-      'right': [0, 0, 500],
+      // 'front': new Vector3(boxCenter.x + boxSize.x * 0.5, boxCenter.y + boxSize.y * 0, boxCenter.z + boxSize.z * 0.5),
+      'front': [500, 0, 0],
+      'back': [-500, 0, 0],
+      'left': [0, 0, 500],
+      'right': [0, 0, -500],
       'top': [0, 500, 0],
       'bottom': [0, -500, 0],
     }
     const tween = new TWEEN.Tween(this.camera.position);
+    // const target = new Vector3().clone(positionMap[type]);
     const target = new Vector3(...positionMap[type]);
     tween.to(target, 2000)
       .easing(TWEEN.Easing.Quadratic.InOut)
@@ -135,9 +151,10 @@ export default class Application {
 
   setupControls() {
     let controls = this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    controls.target.set(0, 80, 0);
+    controls.target.set(0, 0, 0);
     // controls.maxPolarAngle = Math.PI / 2;
-    controls.saveState();
+    controls.maxDistance = 3000;
+    controls.minDistance = 60;
     controls.update();
   }
 
@@ -146,8 +163,15 @@ export default class Application {
     this.raycaster = new Raycaster();
   }
 
-  addObjects() {
+  // todo:后续改成可配置
+  // 加载主场景
+  loadScene() {
     const seedScene = this.seedScene = new SeedScene();
+    // 场景的包围盒
+    let sceneBox = this.sceneBox = new Box3().setFromObject(seedScene);
+    const boxSize = sceneBox.getSize(new Vector3()).length();
+    const boxCenter = sceneBox.getCenter(new Vector3());
+    this.adjustCameraBySceneBox(boxSize * 1.2, boxSize, boxCenter, this.camera);
     this.scene.add(seedScene);
   }
 
@@ -156,13 +180,79 @@ export default class Application {
     this.scene.add(lights);
   }
 
+  /**
+   *
+   * @param {*} sizeToFitOnScreen
+   * @param {*} boxSize
+   * @param {*} boxCenter
+   * @param {*} camera
+   * @see https://threejsfundamentals.org/threejs/lessons/threejs-load-obj.html
+   * @description 根据主场景的大小动态加载调整相机的视角
+   */
+  adjustCameraBySceneBox(sizeToFitOnScreen, boxSize, boxCenter, camera) {
+    const halfSizeToFitOnScreen = sizeToFitOnScreen * 0.5;
+    const halfFovY = MathUtils.degToRad(camera.fov * .5);
+    const distance = halfSizeToFitOnScreen / Math.tan(halfFovY);
+
+    // compute a unit vector that points in the direction the camera is now
+    // from the center of the box
+    const direction = (new Vector3()).subVectors(camera.position, boxCenter).normalize();
+
+    // move the camera to a position distance units way from the center
+    // in whatever direction the camera was from the center already
+    camera.position.copy(direction.multiplyScalar(distance).add(boxCenter));
+    this.defaultCameraPosition = camera.position.toArray();
+
+    // pick some near and far values for the frustum that
+    // will contain the box.
+    camera.near = boxSize / 100;
+    camera.far = boxSize * 100;
+
+    camera.updateProjectionMatrix();
+
+    // point the camera to look at the center of the box
+    camera.lookAt(boxCenter.x, boxCenter.y, boxCenter.z);
+  }
+
+  // TODO: outline选中效果
+  addPostProcess() {
+    let { renderer, scene, camera } = this;
+    let { offsetWidth, offsetHeight } = this.container;
+    let composer = this.composer = new EffectComposer(renderer);
+
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    let outlinePass = this.outlinePass = new OutlinePass(new Vector2(offsetWidth, offsetHeight), scene, camera);
+    outlinePass.edgeStrength = 2;
+    composer.addPass(outlinePass);
+
+    const onLoad = function (texture) {
+      outlinePass.patternTexture = texture;
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
+    };
+
+    const loader = new TextureLoader();
+    loader.load(patternImage, onLoad);
+
+    let effectFXAA = this.effectFXAA = new ShaderPass(FXAAShader);
+    effectFXAA.uniforms['resolution'].value.set(1 / offsetWidth, 1 / offsetHeight);
+    composer.addPass(effectFXAA);
+  }
+
   render() {
+    let { position, up } = this.camera;
+    let { target } = this.controls;
+
     const onAnimationFrameHandler = (timeStamp) => {
       this.camera.updateMatrix();
       this.camera.updateProjectionMatrix();
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
+      this.viewBox && this.viewBox.render(position, target, up);
       this.seedScene.update && this.seedScene.update(timeStamp);
+      this.composer.render();
       TWEEN.update(timeStamp);
       window.requestAnimationFrame(onAnimationFrameHandler);
     }
@@ -199,7 +289,7 @@ export default class Application {
    * @param {number} distance 相机距离焦点的位置,默认为500
    * @param {number} time 动画时间
    */
-  flyByBox(box, direction ,distance = 500, time = 2000) {
+  flyByBox(box, direction, distance = 500, time = 2000) {
     const source = this.camera.position;
     const boxCenter = box.getCenter(new Vector3());
     const target = new Vector3();
@@ -213,6 +303,21 @@ export default class Application {
         this.camera.lookAt(target);
         this.controls.update();
       }).start();
+  }
+
+  /**
+   *
+   * @param {Boolean} isOpen
+   */
+  switchShadow(isOpen) {
+    this.seedScene.traverse(object => {
+      if (object.isMesh) {
+        object.castShadow = isOpen;
+        object.receiveShadow = isOpen;
+        object.updateMatrix();
+        object.updateWorldMatrix();
+      }
+    })
   }
 
   handleClick(e) {
@@ -235,26 +340,29 @@ export default class Application {
   }
 
   handleMouseMove(event) {
-    if (this.selectObject) {
-      this.scene.remove(this.selectObject);
-    }
+    // if (this.selectObject) {
+    //   this.scene.remove(this.selectObject);
+    // }
     const [x, y] = getNDCCoordinates(this.renderer.domElement, event);
     this.raycaster.setFromCamera({ x, y }, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.seedScene.children, true);
+    const intersects = this.raycaster.intersectObject(this.seedScene, true);
 
     if (intersects.length > 0) {
       const hexColor = Math.random() * 0xffffff;
       const intersection = intersects[0];
       // 选中整体标识
       // intersection.object.material.color.setHex(hexColor);
-      this.selectObject = new BoxHelper(intersection.object.parent, 0xffff00);
-      this.selectObject.updateMatrix();
-      this.selectObject.updateWorldMatrix();
-      this.scene.add(this.selectObject);
+      // this.selectObject = new BoxHelper(intersection.object.parent, 0xffff00);
+      // this.selectObject.updateMatrix();
+      // this.selectObject.updateWorldMatrix();
+      // this.scene.add(this.selectObject);
 
       // const { direction, origin } = this.raycaster.ray;
       // const arrow = new ArrowHelper(direction, origin, 100, hexColor);
       // this.scene.add(arrow);
+      this.outlinePass.selectedObjects = [intersection.object];
+    } else {
+      this.outlinePass.selectedObjects = [];
     }
   }
 
@@ -267,6 +375,13 @@ export default class Application {
     this.camera.aspect = innerWidth / innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(innerWidth, innerHeight);
+    this.composer.setSize(innerWidth, innerHeight);
+    this.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+  }
+
+  // 销毁方法
+  dispose() {
+
   }
 
   // 调试用
