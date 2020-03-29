@@ -109,7 +109,7 @@ export default class Application {
     this.scene.add(camera);
   }
 
-  // todo: 需要根据场景包围盒动态计算
+  // TODO: 需要根据场景包围盒动态计算
   setCameraPositionByDirection(type) {
     if (!this.sceneBox) return;
     const boxSize = this.sceneBox.getSize(new Vector3());
@@ -164,7 +164,7 @@ export default class Application {
     this.raycaster = new Raycaster();
   }
 
-  // todo:后续改成可配置
+  // TODO:后续改成可配置
   // 加载主场景
   loadScene() {
     const seedScene = this.seedScene = new SeedScene();
@@ -367,7 +367,7 @@ export default class Application {
     }
   }
 
-  // todo
+  // TODO: 非全屏的时候
   handleResize(e) {
     // const { offsetWidth, offsetHeight } = this.container;
     const { innerWidth, innerHeight } = window;

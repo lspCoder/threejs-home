@@ -2,7 +2,7 @@
  * @Author: lsp
  * @Date: 2020-03-24 16:54:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-27 20:42:14
+ * @Last Modified time: 2020-03-29 17:53:16
  */
 import {
   WebGLRenderer,
@@ -275,7 +275,7 @@ export default class ViewBox {
     this.app.resetCamera();
   }
 
-  // todo
+  // TODO: 插件销毁
   dispose() {
     this.container.removeEventListener('mousemove', this.handleMousemove);
     this.container.removeEventListener('click', this.handleClick);
