@@ -17,20 +17,21 @@ import {
   TextureLoader,
   RepeatWrapping
 } from 'three';
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import FXAAShader from './postprocessing/FXAAShader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as Detector from "./vender/Detector";
 import * as dat from 'dat.gui';
-
 
 import BasicLights from './objects/Lights';
 import SeedScene from './objects/Scene.js';
 import ViewBox from "./objects/ViewBox";
 import { createBackground, createCubeTexture } from "./texture/canvasTexture";
 import { getNDCCoordinates, getScreenCoordinates } from './utils.js';
-import TWEEN, { Tween } from "@tweenjs/tween.js";
-import EffectComposer, { RenderPass, ShaderPass } from '@johh/three-effectcomposer';
-import OutlinePass from './postprocessing/OutlinePass';
-import FXAAShader from './postprocessing/FXAAShader';
+import TWEEN from "@tweenjs/tween.js";
 
 import patternImage from "./texture/images/tri_pattern.jpg";
 

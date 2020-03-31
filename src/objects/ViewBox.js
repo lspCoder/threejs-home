@@ -2,7 +2,7 @@
  * @Author: lsp
  * @Date: 2020-03-24 16:54:26
  * @Last Modified by: lsp
- * @Last Modified time: 2020-03-29 17:53:16
+ * @Last Modified time: 2020-03-31 10:33:34
  */
 import {
   WebGLRenderer,
@@ -66,7 +66,7 @@ export default class ViewBox {
     this.createResetButton();
     this.createScene(options);
     this.createCube();
-    this.createArrows();
+    this.createArrows(options);
     this.createRayCaster();
     this.bindEvent();
   }
@@ -144,43 +144,44 @@ export default class ViewBox {
   }
 
   // 创建导航箭头
-  createArrows() {
+  createArrows(options) {
     let arrows = this.arrows = new Object3D();
     let orgin = new Vector3(0, 0, 0);
+    let size = Math.min(...options.size);
 
     {
       let dir = new Vector3(0, 0, 1);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'left';
       arrows.add(arrow);
     }
     {
       let dir = new Vector3(0, 1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'top';
       arrows.add(arrow);
     }
     {
       let dir = new Vector3(1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'front';
       arrows.add(arrow);
     }
     {
       let dir = new Vector3(0, 0, -1);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'right';
       arrows.add(arrow);
     }
     {
       let dir = new Vector3(0, -1, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'bottom';
       arrows.add(arrow);
     }
     {
       let dir = new Vector3(-1, 0, 0);
-      let arrow = new ArrowHelper(dir, orgin, 60, this.normalArrowColor, 20, 25);
+      let arrow = new ArrowHelper(dir, orgin, size * 0.4, this.normalArrowColor, 20, 25);
       arrow.name = 'back';
       arrows.add(arrow);
     }
@@ -217,7 +218,7 @@ export default class ViewBox {
     this.arrows.children.map((child) => {
       let direction = child.getWorldDirection(new Vector3());
       let theta = 2 * window.Math.abs(front.dot(direction));
-      theta = 1 - MathUtils.clamp(theta, -1, 1);
+      theta = MathUtils.clamp(theta, -1, 1);
       child.line.material.opacity = theta;
       child.cone.material.opacity = theta;
     })
